@@ -1,0 +1,10 @@
+.env
+.lock
+lib/
+*.tag
+.venv
+__pycache__/
+*.pyc
+*.pyo
+*.cfg
+Scripts/
