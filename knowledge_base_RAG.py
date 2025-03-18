@@ -1,37 +1,66 @@
 from phi.agent import Agent
-from phi.agent import Agent
+# from phi.agent import agent
+from phi.knowledge.website import WebsiteKnowledgeBase
 from phi.model.google import Gemini
+# from phi.knowledge.pdf import PDFUrlKnowledgeBase
+from phi.tools.googlesearch import GoogleSearch
 from knowledge_base import knowledge_base
-from phi.knowledge.pdf import PDFUrlKnowledgeBase
 from phi.vectordb.pgvector import PgVector
 from phi.embedder.google import GeminiEmbedder
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# Create a knowledge base from a PDF
-knowledge_base = PDFUrlKnowledgeBase(
-    urls=["https://phi-public.s3.amazonaws.com/recipes/ThaiRecipes.pdf"],
-    # Use LanceDB as the vector database
+# knowledge_base = PDFUrlKnowledgeBase(
+#     urls=["https://phi-public.s3.amazonaws.com/recipes/ThaiRecipes.pdf"],
+#     vector_db=PgVector(
+#         table_name="recipes",
+#         db_url=os.getenv("DATABASE_URL"),
+#         embedder=GeminiEmbedder(id="gemini-2.0-flash"),
+#     ),
+# )
+
+knowledge_base = WebsiteKnowledgeBase(
+    urls=["https://docs.phidata.com/introduction"],
+    # Number of links to follow from the seed URLs
+    max_links=10,
+    # Table name: ai.website_documents
     vector_db=PgVector(
-        table_name="recipes",
-        # uri="tmp/lancedb",
+        table_name="website_documents",
         db_url=os.getenv("DATABASE_URL"),
-        # search_type=SearchType.vector,
-        # embedder=OpenAIEmbedder(model="text-embedding-3-small"),
         embedder=GeminiEmbedder(id="gemini-2.0-flash"),
     ),
-    # vector_db=PgVector(
-    # ),
 )
-# Comment out after first run as the knowledge base is loaded
-knowledge_base.load(recreate=False)
 
 agent = Agent(
     model=Gemini(id="gemini-2.0-flash"),
-    # Add the knowledge base to the agent
     knowledge=knowledge_base,
+    tools=[GoogleSearch()],
+    description="You are a agent that helps users find the latest news and answers to their questions.",
+    search_knowledge=True,
     show_tool_calls=True,
     markdown=True,
 )
-agent.print_response("How do I make chicken and galangal in coconut milk soup", stream=True)
+
+agent.knowledge.load(recreate=False)
+# agent.print_response("can you give me the small code snippets for integrate the ai agent using phidata?", stream=True)
+
+# # ...existing code...
+
+def chat():
+    print("🤖 AI Assistant: Hello! I'm here to help you. Type 'exit' to end the conversation.")
+    
+    while True:
+        user_input = input("\n👤 You: ").strip()
+        
+        if user_input.lower() in ['exit', 'quit', 'bye']:
+            print("🤖 AI Assistant: Goodbye! Have a great day!")
+            break
+            
+        if user_input:
+            print("\n🤖 AI Assistant:", end=" ")
+            agent.print_response(user_input, stream=True)
+
+if __name__ == "__main__":
+    agent.knowledge.load(recreate=False)
+    chat()
